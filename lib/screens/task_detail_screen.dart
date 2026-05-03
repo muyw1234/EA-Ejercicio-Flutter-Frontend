@@ -1,16 +1,71 @@
 import 'package:flutter/material.dart';
 import '../models/task.dart';
+import '../services/organization_service.dart';
 
-class TaskDetailScreen extends StatelessWidget {
+class TaskDetailScreen extends StatefulWidget {
   final Task task;
 
   const TaskDetailScreen({super.key, required this.task});
+
+  @override
+  State<TaskDetailScreen> createState() => _TaskDetailScreenState();
 
   String _formatDate(DateTime date) {
     final String day = date.day.toString().padLeft(2, '0');
     final String month = date.month.toString().padLeft(2, '0');
     final String year = date.year.toString();
     return '$day/$month/$year';
+  }
+}
+
+class _TaskDetailScreenState extends State<TaskDetailScreen> {
+  // 3. NUEVAS VARIABLES: Para gestionar el cambio
+  final OrganizationService _service = OrganizationService();
+  late String _estadoActual;
+  bool _cargando = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _estadoActual =
+        widget.task.estado; // Inicializamos con el estado de la tarea
+  }
+
+  String _formatDate(DateTime date) {
+    final String day = date.day.toString().padLeft(2, '0');
+    final String month = date.month.toString().padLeft(2, '0');
+    final String year = date.year.toString();
+    return '$day/$month/$year';
+  }
+
+  // 4. NUEVA FUNCIÓN: Para enviar el cambio al backend
+  Future<void> _cambiarEstado(String? nuevoEstado) async {
+    if (nuevoEstado == null || nuevoEstado == _estadoActual) return;
+
+    setState(() => _cargando = true);
+    try {
+      await _service.updateTaskStatus(widget.task.id, nuevoEstado);
+
+      setState(() {
+        _estadoActual = nuevoEstado;
+        widget.task.estado = nuevoEstado;
+        _cargando = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Actualizado a $nuevoEstado'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      setState(() => _cargando = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error al actualizar'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -23,6 +78,19 @@ class TaskDetailScreen extends StatelessWidget {
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
+        actions: [
+          if (_cargando)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.only(right: 15),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -63,7 +131,7 @@ class TaskDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    task.titulo,
+                    widget.task.titulo,
                     style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -72,14 +140,55 @@ class TaskDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'ID: ${task.id}',
+                    'ID: ${widget.task.id}',
                     style: TextStyle(color: Colors.grey[500], fontSize: 12),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 24),
-            
+
+            const Text(
+              'Estado de la Tarea',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: _getStatusColor(_estadoActual)),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _estadoActual,
+                  isExpanded: true,
+                  items: ['To do', 'In progress', 'Done'].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(
+                        value,
+                        style: TextStyle(
+                          color: _getStatusColor(value),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: _cargando
+                      ? null
+                      : _cambiarEstado, // Aquí se dispara la magia
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
             // Dates Section
             const Text(
               'Plazos',
@@ -94,21 +203,21 @@ class TaskDetailScreen extends StatelessWidget {
               children: [
                 _buildDateCard(
                   'Inicio',
-                  _formatDate(task.fechaInicio),
+                  _formatDate(widget.task.fechaInicio),
                   Icons.calendar_today,
                   Colors.green,
                 ),
                 const SizedBox(width: 16),
                 _buildDateCard(
                   'Fin',
-                  _formatDate(task.fechaFin),
+                  _formatDate(widget.task.fechaFin),
                   Icons.event_available,
                   Colors.redAccent,
                 ),
               ],
             ),
             const SizedBox(height: 32),
-            
+
             // Assigned Users Section
             const Text(
               'Usuarios Asignados',
@@ -119,7 +228,7 @@ class TaskDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            if (task.usuarios.isEmpty)
+            if (widget.task.usuarios.isEmpty)
               const Center(
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
@@ -130,9 +239,9 @@ class TaskDetailScreen extends StatelessWidget {
               ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: task.usuarios.length,
+                itemCount: widget.task.usuarios.length,
                 itemBuilder: (context, index) {
-                  final user = task.usuarios[index];
+                  final user = widget.task.usuarios[index];
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(16),
@@ -217,14 +326,24 @@ class TaskDetailScreen extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               date,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'To do':
+        return Colors.grey;
+      case 'In progress':
+        return Colors.blueAccent;
+      case 'Done':
+        return Colors.green;
+      default:
+        return Colors.black;
+    }
   }
 }

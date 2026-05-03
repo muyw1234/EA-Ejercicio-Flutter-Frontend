@@ -36,14 +36,11 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-    final _isLoading = authProvider.isLoading;
-    final _errorMessage = authProvider.errorMessage;
+    final isLoading = authProvider.isLoading;
+    final errorMessage = authProvider.errorMessage;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Iniciar Sesión'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Iniciar Sesión'), centerTitle: true),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -66,8 +63,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     'Bienvenido a Event Manager',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),
@@ -91,11 +88,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  if (_errorMessage.isNotEmpty)
+                  if (errorMessage.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16.0),
                       child: Text(
-                        _errorMessage,
+                        errorMessage,
                         style: const TextStyle(color: Colors.red),
                         textAlign: TextAlign.center,
                       ),
@@ -109,8 +106,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      onPressed: _isLoading ? null : _login,
-                      child: _isLoading
+                      onPressed: isLoading ? null : _login,
+                      child: isLoading
                           ? const SizedBox(
                               height: 20,
                               width: 20,

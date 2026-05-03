@@ -97,10 +97,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Registrarse'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Registrarse'), centerTitle: true),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -123,8 +120,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Text(
                     'Crea tu cuenta',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   TextField(
@@ -159,7 +156,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   _isLoadingOrgs
                       ? const CircularProgressIndicator()
                       : DropdownButtonFormField<String>(
-                          value: _selectedOrganizationId,
+                          initialValue: _selectedOrganizationId,
                           decoration: const InputDecoration(
                             labelText: 'Organización',
                             border: OutlineInputBorder(),
